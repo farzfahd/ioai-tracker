@@ -320,7 +320,7 @@ main{flex:1; min-width:0; padding:22px 26px 100px; max-width:1180px; margin:0 au
 .toast{
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--panel);
   border:1px solid var(--border-strong); border-radius:12px; padding:12px 16px; font-size:12.5px;
-  box-shadow:var(--shadow); z-index:150; max-width:90vw; display:flex; align-items:center; gap:10px;
+  box-shadow:var(--shadow); z-index:300; max-width:90vw; display:flex; align-items:center; gap:10px;
 }
 .toast button{background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:5px 9px; font-size:11.5px; color:var(--text);}
 
@@ -1821,12 +1821,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 <script type="module">
 /* ================= Cloud sync (Firebase Auth + Firestore) ================= */
-/* Isi firebaseConfig dari Firebase Console (lihat PANDUAN_FIREBASE_GITHUB_PAGES.md) */// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
+/* Isi firebaseConfig dari Firebase Console (lihat PANDUAN_FIREBASE_GITHUB_PAGES.md) */
 const firebaseConfig = {
   apiKey: "AIzaSyDrwpN90p-YeqWt1d06_FS4NMems1h7-BE",
   authDomain: "track-ioai.firebaseapp.com",
@@ -1836,8 +1831,7 @@ const firebaseConfig = {
   appId: "1:939986827799:web:f1b1103cbf345b937bfa52"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+//
 const V = '10.14.1', G = 'https://www.gstatic.com/firebasejs/' + V + '/';
 const $ = id => document.getElementById(id);
 const str = o => JSON.stringify(o, (k,v) => k === '_u' ? undefined : v);
@@ -1845,7 +1839,8 @@ const SNAP = { progress:{}, checkpoints:{}, settings:'' };
 let firstSync = false, fb = null, user = null, wasIn = false, unsubs = [], pending = false, pushT = null;
 
 function chip(t, cls){ const c = $('syncChip'); if(c){ c.textContent = t; c.className = 'sync-chip ' + (cls||''); } }
-function authBtn(){ const b = $('btnCloudAuth'); if(b) b.textContent = user ? '🚪 Keluar (' + (user.displayName||user.email) + ')' : '☁️ Masuk dengan Google'; }
+function authBtn(){ const o = $('btnCloudOnboard'); if(o) o.textContent = user ? '✅ Masuk sebagai ' + (user.displayName||user.email) : '☁️ Sudah punya data? Masuk dengan Google';
+  const b = $('btnCloudAuth'); if(b) b.textContent = user ? '🚪 Keluar (' + (user.displayName||user.email) + ')' : '☁️ Masuk dengan Google'; }
 function status(){
   if(!user) return chip('☁️ Lokal saja');
   if(!navigator.onLine) return chip('📴 Offline · tersimpan lokal', 'off');
@@ -1870,6 +1865,7 @@ async function loadSdk(){
 
 async function login(){
   if(!await loadSdk()) return;
+  toast('Membuka jendela login Google…');
   try{ await fb.au.signInWithPopup(fb.auth, new fb.au.GoogleAuthProvider()); }
   catch(e){
     const m = { 'auth/popup-blocked':'Pop-up diblokir. Izinkan pop-up untuk situs ini lalu coba lagi.', 'auth/popup-closed-by-user':'Login dibatalkan.', 'auth/unauthorized-domain':'Domain belum diizinkan di Firebase Authentication (lihat panduan langkah 5).', 'auth/network-request-failed':'Tidak ada koneksi internet.' };
@@ -1891,6 +1887,7 @@ async function onAuth(u){
   localStorage.setItem('ioai_cloud_uid', u.uid);
   try{
     const has = (await fb.getDoc(ref('meta','settings'))).exists();
+    toast(has ? 'Masuk sebagai ' + (u.displayName||u.email) + '. Mengambil data dari cloud…' : 'Masuk sebagai ' + (u.displayName||u.email) + '. Belum ada data di cloud.');
     const localHas = appState.startDate || Object.values(appState.progress).some(p => !blank(p));
     if(!has && localHas){
       if(confirm('Impor data belajar dari perangkat ini ke cloud?\n\nOK = unggah data lama.\nBatal = data lama tetap di perangkat ini, tidak diunggah.')){
